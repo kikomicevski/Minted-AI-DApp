@@ -1,5 +1,13 @@
 # AI NFT Generator
 
+
+![image](https://user-images.githubusercontent.com/35940016/232174668-389dbb0e-e2aa-4de2-bb64-6970301a0b76.png)
+
+
+
+
+
+
 ## Technology Stack & Tools
 
 - Solidity (Writing Smart Contracts & Tests)
