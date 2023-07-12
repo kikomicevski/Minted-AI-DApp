@@ -1,0 +1,17 @@
+/* Navbar */
+.navbar img {
+    display: block;
+    width: 200px;
+    height: 70px;
+}
+  
+.navbar-nav .nav-item .nav-link {
+    background-color: #fbf38c;
+    padding: 10px 20px;
+    border-radius: 5px;
+    display: inline-block;
+    font-family: 'Yeseva One';
+    font-weight: bold;
+    color: #000000;
+}
+  

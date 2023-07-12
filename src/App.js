@@ -1,161 +1,205 @@
 import { useState, useEffect } from 'react';
-import { NFTStorage, File } from 'nft.storage'
+import { NFTStorage, File } from 'nft.storage';
 import { Buffer } from 'buffer';
 import { ethers } from 'ethers';
 import axios from 'axios';
+import './App.css';
+import mainImage from '../src/images/img-header.png';
 
 // Components
 import Spinner from 'react-bootstrap/Spinner';
-import Navigation from './components/Navigation';
+import Navbar from './components/Navbar';
 
 // ABIs
-import NFT from './abis/NFT.json'
+import MintedABI from './abis/MintedABI.json';
 
-// Config
-import config from './config.json';
+const mintedAddress = "0x568c24B0BFd386079c7c6a5b90880153405a605e";
 
 function App() {
-  const [provider, setProvider] = useState(null)
-  const [account, setAccount] = useState(null)
-  const [nft, setNFT] = useState(null)
+  const [contract, setContract] = useState(null);
+  const [account, setAccount] = useState(null);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState(null);
+  const [url, setURL] = useState(null);
+  const [message, setMessage] = useState("");
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [isImageReady, setIsImageReady] = useState(false);
 
-  const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
-  const [image, setImage] = useState(null)
-  const [url, setURL] = useState(null)
-
-  const [message, setMessage] = useState("")
-  const [isWaiting, setIsWaiting] = useState(false)
+  useEffect(() => {
+    loadBlockchainData();
+  }, []);
 
   const loadBlockchainData = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum)
-    setProvider(provider)
+    try {
+      if (window.ethereum) {
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const accounts = await provider.listAccounts();
+        setAccount(accounts[0]);
 
-    const network = await provider.getNetwork()
+        const abi = Array.isArray(MintedABI) ? MintedABI : []; // Ensure abi is an array
+        const address = mintedAddress;
 
-    const nft = new ethers.Contract(config[network.chainId].nft.address, NFT, provider)
-    setNFT(nft)
-  }
+        const contract = new ethers.Contract(address, abi, signer);
+        setContract(contract);
+      } else {
+        window.alert('Please install MetaMask to use this application.');
+      }
+    } catch (error) {
+      console.error(error);
+      window.alert('Failed to load blockchain data. Please check the console for errors.');
+    }
+  };
 
   const submitHandler = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (name === "" || description === "") {
-      window.alert("Please provide a name and description")
-      return
+      window.alert("Please provide a name and description");
+      return;
     }
 
-    setIsWaiting(true)
+    setIsWaiting(true);
 
-    // Call AI API to generate a image based on description
-    const imageData = await createImage()
+    // Call AI API to generate an image based on the description
+    const imageData = await createImage();
 
-    // Upload image to IPFS (NFT.Storage)
-    const url = await uploadImage(imageData)
+    // Upload the image to IPFS (NFT.Storage)
+    const url = await uploadImage(imageData);
 
-    // Mint NFT
-    await mintImage(url)
+    // Update the image readiness state
+    setIsImageReady(true);
 
-    setIsWaiting(false)
-    setMessage("")
-  }
+    // Set the URL
+    setURL(url);
+
+    setIsWaiting(false);
+    setMessage("");
+  };
 
   const createImage = async () => {
-    setMessage("Generating Image...")
+    setMessage("Generating Image...");
 
     // You can replace this with different model API's
-    const URL = `https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2`
+    const URL = `https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1`;
 
     // Send the request
-    const response = await axios({
-      url: URL,
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.REACT_APP_HUGGING_FACE_API_KEY}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      data: JSON.stringify({
-        inputs: description, options: { wait_for_model: true },
-      }),
-      responseType: 'arraybuffer',
-    })
+    try {
+      const response = await axios({
+        url: URL,
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.REACT_APP_HUGGING_FACE_API_KEY}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        data: JSON.stringify({
+          inputs: description,
+          options: { wait_for_model: true },
+        }),
+        responseType: 'arraybuffer',
+      });
 
-    const type = response.headers['content-type']
-    const data = response.data
+      const type = response.headers['content-type'];
+      const data = Buffer.from(response.data).toString('base64');
+      const img = `data:${type};base64,${data}`; // <-- This is so we can render it on the page
+      setImage(img);
 
-    const base64data = Buffer.from(data).toString('base64')
-    const img = `data:${type};base64,` + base64data // <-- This is so we can render it on the page
-    setImage(img)
-
-    return data
-  }
+      return response.data;
+    } catch (error) {
+      console.error('Error generating image:', error);
+      throw new Error('Failed to generate image');
+    }
+  };
 
   const uploadImage = async (imageData) => {
-    setMessage("Uploading Image...")
+    setMessage("Uploading Image...");
 
-    // Create instance to NFT.Storage
-    const nftstorage = new NFTStorage({ token: process.env.REACT_APP_NFT_STORAGE_API_KEY })
+    // Create instance of NFT.Storage
+    const nftstorage = new NFTStorage({ token: process.env.REACT_APP_NFT_STORAGE_API_KEY });
 
     // Send request to store image
     const { ipnft } = await nftstorage.store({
       image: new File([imageData], "image.jpeg", { type: "image/jpeg" }),
       name: name,
       description: description,
-    })
+    });
 
     // Save the URL
-    const url = `https://ipfs.io/ipfs/${ipnft}/metadata.json`
-    setURL(url)
+    const url = `https://ipfs.io/ipfs/${ipnft}/metadata.json`;
 
-    return url
-  }
+    return url;
+  };
+  
 
-  const mintImage = async (tokenURI) => {
-    setMessage("Waiting for Mint...")
+  const handleMint = async () => {
+    try {
+      if (contract) {
+        const tokenId = await contract.mintNFT(url.toString()); // Convert URL to string
+        console.log('Token ID:', tokenId);
 
-    const signer = await provider.getSigner()
-    const transaction = await nft.connect(signer).mint(tokenURI, { value: ethers.utils.parseUnits("1", "ether") })
-    await transaction.wait()
-  }
-
-  useEffect(() => {
-    loadBlockchainData()
-  }, [])
+        // Rest of the code...
+      } else {
+        window.alert('Contract instance not available.');
+      }
+    } catch (error) {
+      console.error(error);
+      window.alert('Failed to mint the token. Please check the console for errors.');
+    }
+  };
 
   return (
-    <div>
-      <Navigation account={account} setAccount={setAccount} />
+    <div className="main text-center mt-4">
+      <Navbar account={account} setAccount={setAccount} />
 
-      <div className='form'>
-        <form onSubmit={submitHandler}>
-          <input type="text" placeholder="Create a name..." onChange={(e) => { setName(e.target.value) }} />
-          <input type="text" placeholder="Create a description..." onChange={(e) => setDescription(e.target.value)} />
-          <input type="submit" value="Create & Mint" />
-        </form>
-
-        <div className="image">
-          {!isWaiting && image ? (
-            <img src={image} alt="AI generated image" />
-          ) : isWaiting ? (
-            <div className="image__placeholder">
-              <Spinner animation="border" />
-              <p>{message}</p>
-            </div>
-          ) : (
-            <></>
-          )}
+      <img src={mainImage} className="main-image" alt="mainImage" />
+      <p>
+        Create and Trade AI-Driven NFTs <br />
+        Unleash your creativity with AI-powered image generation and mint your creations into NFTs for the blockchain art market.
+      </p>
+      <div className="main-inputs">
+        <input
+          type="text"
+          placeholder="Enter Name e.g. My First NFT"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Enter Prompt e.g. Cat swimming in the ocean"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <div className="buttons-container">
+          <button type="button" className="btn generate-btn" onClick={submitHandler}>
+            Generate
+          </button>
         </div>
       </div>
 
-      {!isWaiting && url && (
-        <p>
-          View&nbsp;<a href={url} target="_blank" rel="noreferrer">Metadata</a>
-        </p>
-      )}
+      <div className="image-container">
+        <div className="image">
+          {!isWaiting && image ? (
+              <img src={image} alt="AI generated image" />
+          ) : (
+            isWaiting && (
+              <div className="image__placeholder">
+                <Spinner animation="border" />
+                <p>{message}</p>
+              </div>
+            )
+          )}
+        </div>
+        {isImageReady && (
+          <button className="mint-btn" onClick={handleMint}>
+            Mint
+          </button>
+        )}
+      </div>
     </div>
   );
 }
-
 
 export default App;
