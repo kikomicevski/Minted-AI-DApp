@@ -13,7 +13,7 @@ import Navbar from './components/Navbar';
 // ABIs
 import MintedABI from './abis/MintedABI.json';
 
-const mintedAddress = "0x568c24B0BFd386079c7c6a5b90880153405a605e";
+const mintedAddress = "0x16CCc7dACc5bc7908309405465543d407bad894E";
 
 function App() {
   const [contract, setContract] = useState(null);
@@ -83,7 +83,7 @@ function App() {
     setMessage("Generating Image...");
 
     // You can replace this with different model API's
-    const URL = `https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1`;
+    const URL = `https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2`;
 
     // Send the request
     try {
