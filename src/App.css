@@ -108,7 +108,7 @@ button.mint-btn:hover {
 
 
 @media screen and (max-width: 768px) {
-    body {
+    .main {
       flex-direction: column;
     }
 }
