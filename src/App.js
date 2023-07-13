@@ -13,7 +13,7 @@ import Navbar from './components/Navbar';
 // ABIs
 import MintedABI from './abis/MintedABI.json';
 
-const mintedAddress = "0x16CCc7dACc5bc7908309405465543d407bad894E";
+const mintedAddress = "0x184CE4383e9554356c4b66Ed7FB7d441DbD7e12E";
 
 function App() {
   const [contract, setContract] = useState(null);
