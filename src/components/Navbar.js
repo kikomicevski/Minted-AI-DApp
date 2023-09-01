@@ -1,47 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import Logo from '../images/minted-logo.png';
+import Logo from '../images/Logo-M.png';
 import './Navbar.css';
+import '../index.css'
 
 const Navbar = () => {
   const [walletAddress, setWalletAddress] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    getCurrentWalletConnected();
+    checkWalletConnection();
     addWalletListener();
   }, []);
 
-  const handleConnectWallet = async () => {
-    if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
-      try {
-        /* MetaMask is installed */
-        const accounts = await window.ethereum.request({
-          method: 'eth_requestAccounts',
-        });
-        setWalletAddress(accounts[0]);
-        console.log(accounts[0]);
-      } catch (err) {
-        console.error(err.message);
-      }
-    } else {
-      /* MetaMask is not installed */
-      console.log('Please install MetaMask');
-    }
-  };
-
-  const openMetaMask = async () => {
-    if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
-      try {
-        await window.ethereum.enable();
-        console.log('MetaMask opened');
-      } catch (err) {
-        console.error('Failed to open MetaMask:', err);
-      }
-    } else {
-      console.log('MetaMask is not installed');
-    }
-  };
-
-  const getCurrentWalletConnected = async () => {
+  const checkWalletConnection = async () => {
     if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
       try {
         const accounts = await window.ethereum.request({
@@ -49,9 +20,9 @@ const Navbar = () => {
         });
         if (accounts.length > 0) {
           setWalletAddress(accounts[0]);
-          console.log(accounts[0]);
+          setIsConnected(true);
         } else {
-          console.log('Connect to MetaMask using the Connect button');
+          setIsConnected(false);
         }
       } catch (err) {
         console.error(err.message);
@@ -62,28 +33,69 @@ const Navbar = () => {
     }
   };
 
+  const connectWallet = async () => {
+    if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
+      try {
+        const permissions = await window.ethereum.request({
+          method: 'wallet_requestPermissions',
+          params: [
+            {
+              eth_accounts: {},
+            },
+          ],
+        });
+
+        if (permissions.length > 0) {
+          const accounts = await window.ethereum.request({
+            method: 'eth_requestAccounts',
+          });
+          setWalletAddress(accounts[0]);
+          setIsConnected(true);
+        } else {
+          setIsConnected(false);
+        }
+      } catch (err) {
+        console.error(err.message);
+      }
+    } else {
+      /* MetaMask is not installed */
+      console.log('Please install MetaMask');
+    }
+  };
+
+  const disconnectWallet = () => {
+    setWalletAddress('');
+    setIsConnected(false);
+  };
+
   const addWalletListener = async () => {
     if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
       window.ethereum.on('accountsChanged', (accounts) => {
-        setWalletAddress(accounts[0]);
-        console.log(accounts[0]);
+        if (accounts.length > 0) {
+          setWalletAddress(accounts[0]);
+          setIsConnected(true);
+        } else {
+          setWalletAddress('');
+          setIsConnected(false);
+        }
       });
     } else {
       /* MetaMask is not installed */
-      setWalletAddress('');
+      setIsConnected(false);
       console.log('Please install MetaMask');
     }
   };
 
   return (
-    <nav className="navbar navbar-expand-lg">
+    <nav className="navbar navbar-expand">
       <div className="container">
         <img src={Logo} alt="logo" />
         <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
-          <ul className="navbar-nav">
-            <li className="nav-item">
-              <button className="nav-link" onClick={walletAddress ? openMetaMask : handleConnectWallet}>
-                {walletAddress && walletAddress.length > 0 ? (
+              <button
+                className="btn"
+                onClick={isConnected ? disconnectWallet : connectWallet}
+              >
+                {isConnected ? (
                   <>
                     <span>Connected:</span>
                     {` ${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}`}
@@ -92,8 +104,6 @@ const Navbar = () => {
                   'Connect Wallet'
                 )}
               </button>
-            </li>
-          </ul>
         </div>
       </div>
     </nav>

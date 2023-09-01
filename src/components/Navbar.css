@@ -1,17 +1,19 @@
 /* Navbar */
+.navbar {
+    display: flex;
+    align-items: center; /* Center items horizontally */
+    text-align: center; /* Center text horizontally */
+}
+  
 .navbar img {
-    display: block;
-    width: 200px;
-    height: 70px;
+    width: 150px;
+    height: 60px;
 }
+
   
-.navbar-nav .nav-item .nav-link {
-    background-color: #fbf38c;
-    padding: 10px 20px;
-    border-radius: 5px;
-    display: inline-block;
-    font-family: 'Yeseva One';
-    font-weight: bold;
-    color: #000000;
+/* Add media queries for smaller screens */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
 }
-  
