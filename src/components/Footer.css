@@ -1,0 +1,16 @@
+ul {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+}
+
+li {
+    margin: 20px;
+}
+
+p {
+    font-family: Detacher;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}   

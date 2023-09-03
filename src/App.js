@@ -9,6 +9,7 @@ import mainImage from '../src/images/img-header.png';
 
 // Components
 import Spinner from 'react-bootstrap/Spinner';
+import PhoneCard from './components/PhoneCard';
 
 // ABIs
 import MintedABI from './abis/MintedABI.json';
@@ -221,6 +222,11 @@ function App() {
     <p>
       Unleash your creativity with AI-powered image generation and mint your creations into NFTs for the blockchain art market.
     </p>
+    <br/>
+    <h3>
+      How to Use:
+    </h3>
+    <PhoneCard />
     <div className="main-inputs">
       <p className='inputs'>Enter Name:</p>
       <input
